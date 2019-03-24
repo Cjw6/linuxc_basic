@@ -56,8 +56,8 @@ int main()
 				}
 				//将得到的cfd挂到树上
 				struct epoll_event temp;
-				//temp.events = EPOLLIN;//水平触发 【只要缓冲区有数据 epoll_wait 就返回 频繁调用epoll——wait 系统开销大
-				temp.events = EPOLLIN|EPOLLET;//边缘触发 不能保证缓冲区的数据全部读完 发一次数据调用一次epollwait 
+				temp.events = EPOLLIN;//水平触发 【只要缓冲区有数据 epoll_wait 就返回 频繁调用epoll——wait 系统开销大
+				//temp.events = EPOLLIN|EPOLLET;//边缘触发 不能保证缓冲区的数据全部读完 发一次数据调用一次epollwait 
 				temp.data.fd = cfd;
 				epoll_ctl(epfd, EPOLL_CTL_ADD, cfd, &temp);
 			}
