@@ -11,7 +11,7 @@
 #include<fcntl.h>
 #define server_port 6666
 #define server_ip "127.242.35.4"
-//±ßÔµ·Ç×èÈûÄ£Ê½
+//è¾¹ç¼˜éé˜»å¡æ¨¡å¼
 int main()
 {
 	struct sockaddr_in servaddr, cliaddr;
@@ -26,9 +26,9 @@ int main()
 	bind(lfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
 	listen(lfd, 128);
 	socklen_t clilen = sizeof(cliaddr);
-	//´´½¨epollµÄ¸ù½Úµã 
+	//åˆ›å»ºepollçš„æ ¹èŠ‚ç‚¹ 
 	int epfd = epoll_create(128);
-	//³õÊ¼»¯epollÊ÷ ½«¼àÌıµÄÎÄ¼şÃèÊö·û¹Òµ½Ê÷ÉÏÃæ
+	//åˆå§‹åŒ–epollæ ‘ å°†ç›‘å¬çš„æ–‡ä»¶æè¿°ç¬¦æŒ‚åˆ°æ ‘ä¸Šé¢
 	struct epoll_event ev;
 	ev.data.fd = lfd;
 	ev.events = EPOLLIN;
@@ -37,15 +37,15 @@ int main()
 	int i;
 	while (1)
 	{
-		//Ê¹ÓÃepollÍ¨ÖªÄÚºËfd,ÎÄ¼şio¼ì²â
-		int ret = epoll_wait(epfd, all, sizeof(all) / sizeof(struct epoll_event), -1);//ÉèÖÃ-1 Îª×èÈû
-		//±éÀúallÊı×éµÄÇ°ret¸öÔªËØm
+		//ä½¿ç”¨epollé€šçŸ¥å†…æ ¸fd,æ–‡ä»¶ioæ£€æµ‹
+		int ret = epoll_wait(epfd, all, sizeof(all) / sizeof(struct epoll_event), -1);//è®¾ç½®-1 ä¸ºé˜»å¡
+		//éå†allæ•°ç»„çš„å‰retä¸ªå…ƒç´ m
 		for ( i = 0; i < ret; i++)
 		{
 			int fd = all[i].data.fd;
 			if (fd == lfd)
 			{
-				//½ÓÊÜÁ¬½ÓÇëÇó
+				//æ¥å—è¿æ¥è¯·æ±‚
 				int cfd = accept(lfd,(struct sockaddr*)&cliaddr, &clilen);
 				printf("new connect\n");
 				if (cfd == -1)
@@ -53,41 +53,41 @@ int main()
 					perror("accept error");
 					exit(1);
 				}
-				//ÉèÖÃÎÄ¼şÃèÊö·ûÎª·Ç×èÈû
+				//è®¾ç½®æ–‡ä»¶æè¿°ç¬¦ä¸ºéé˜»å¡
 				int flag = fcntl(cfd, F_GETFL);
 				flag |= O_NONBLOCK;
 				fcntl(cfd, F_SETFL, flag);
-				//½«µÃµ½µÄcfd¹Òµ½Ê÷ÉÏ
+				//å°†å¾—åˆ°çš„cfdæŒ‚åˆ°æ ‘ä¸Š
 				struct epoll_event temp;
-				//temp.events = EPOLLIN;//Ë®Æ½´¥·¢ ¡¾Ö»Òª»º³åÇøÓĞÊı¾İ epoll_wait ¾Í·µ»Ø Æµ·±µ÷ÓÃepoll¡ª¡ªwait ÏµÍ³¿ªÏú´ó
-				temp.events = EPOLLIN|EPOLLET;//±ßÔµ´¥·¢ ²»ÄÜ±£Ö¤»º³åÇøµÄÊı¾İÈ«²¿¶ÁÍê ·¢Ò»´ÎÊı¾İµ÷ÓÃÒ»´Îepollwait 
+				//temp.events = EPOLLIN;//æ°´å¹³è§¦å‘ ã€åªè¦ç¼“å†²åŒºæœ‰æ•°æ® epoll_wait å°±è¿”å› é¢‘ç¹è°ƒç”¨epollâ€”â€”wait ç³»ç»Ÿå¼€é”€å¤§
+				temp.events = EPOLLIN|EPOLLET;//è¾¹ç¼˜è§¦å‘ ä¸èƒ½ä¿è¯ç¼“å†²åŒºçš„æ•°æ®å…¨éƒ¨è¯»å®Œ å‘ä¸€æ¬¡æ•°æ®è°ƒç”¨ä¸€æ¬¡epollwait 
 				temp.data.fd = cfd;
 				epoll_ctl(epfd, EPOLL_CTL_ADD, cfd, &temp);
 			}
 			else
 			{
-				//´¦ÀíÒÑ¾­Á¬½ÓµÄ¿Í»§¶Ë·¢¹ıÀ´µÄÊı¾İ
+				//å¤„ç†å·²ç»è¿æ¥çš„å®¢æˆ·ç«¯å‘è¿‡æ¥çš„æ•°æ®
 				if (!all[i].events&EPOLLIN)
 				{
 					continue;
 				}
-				//¶ÁÊı¾İ
+				//è¯»æ•°æ®
 				int sockfd = all[i].data.fd;
-				//Ñ­»·¶ÁÊı¾İ
+				//å¾ªç¯è¯»æ•°æ®
 				int len;
 				while ((len = recv(sockfd, buf, sizeof(buf), 0)) > 0)
 				{
 					printf("recv data:");
-					//´òÓ¡Êı¾İµ½ÖÕ¶Ë
+					//æ‰“å°æ•°æ®åˆ°ç»ˆç«¯
 					write(STDOUT_FILENO, buf, strlen(buf));
-					//sÊı¾İ·¢ËÍµ½¿Í»§¶Ë
+					//sæ•°æ®å‘é€åˆ°å®¢æˆ·ç«¯
 					send(sockfd, buf, len, 0);
 				}
-				//Ç¿ĞĞ¶ÁÒ»¸öÃ»ÓĞÊı¾İµÄ»º³åÇø errno»á±»ÉèÖÃÎªEAGIN
+				//å¼ºè¡Œè¯»ä¸€ä¸ªæ²¡æœ‰æ•°æ®çš„ç¼“å†²åŒº errnoä¼šè¢«è®¾ç½®ä¸ºEAGIN
 				if (len == 0)
 				{
 					printf("client disconnect\n");
-					//sockfd ´ÓÊ÷ÉÏÉ¾³ı
+					//sockfd ä»æ ‘ä¸Šåˆ é™¤
 					epoll_ctl(epfd, EPOLL_CTL_DEL, sockfd, NULL);
 					close(sockfd);
 				}
