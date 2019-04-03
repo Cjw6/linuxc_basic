@@ -33,14 +33,14 @@ int main()
         perror("open error");
     }
     struct event_base *base_event;
-    base_event=event_base_new();
+    base_event=event_base_new();//创建事件库
     if(base_event==NULL)
     {
         perror("base event new error");
         exit(1);
     }
     struct event *read_fifo;
-    read_fifo=event_new(base_event,fd,EV_READ|EV_PERSIST,read_fifo_fun,event_self_cbarg());
+    read_fifo=event_new(base_event,fd,EV_READ|EV_PERSIST,read_fifo_fun,event_self_cbarg());//创建新的事件
     if(read_fifo==NULL)
     {
         perror("event new error");
@@ -49,11 +49,11 @@ int main()
     struct timeval tval;
     tval.tv_sec=1;
     tval.tv_usec=0;
-    event_add(read_fifo,&tval);
-    event_base_dispatch(base_event);
+    event_add(read_fifo,&tval);//添加事件
+    event_base_dispatch(base_event);//开始事件库循环
     event_free(read_fifo);
     event_base_free(base_event);
-    close(fd);
-    libevent_global_shutdown();
+    close(fd);//关闭文件描述符
+    libevent_global_shutdown();//退出libevent
     return 0;
 }
