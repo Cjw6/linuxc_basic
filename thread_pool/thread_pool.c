@@ -4,6 +4,8 @@
 #include<string.h>
 #include<stdio.h>
 
+#define  _TEST 1
+
 typedef struct _Admin_thread admin_thread_t;
 typedef struct _Work_thread work_thread_t;
 
@@ -36,7 +38,7 @@ struct _Admin_thread{
     int busyThreadCount;
     int stepThreadCount;
     pthread_t admin_thread_tid;//管理者线程的tid
-    pthread_t *thread_tid_arr;
+    pthread_t thread_tid_arr;//存储临时创建的子线程tid
     pthread_mutex_t work_thread_mutex_lock;
     int shutdown;//是否开启关闭线程池
     circularQueue* taskQueue;//任务环形队列
@@ -161,7 +163,8 @@ void* adminThread(void *arg)
     //先初始化最小线程
     for(int i=0;i<admin->min_thread;i++)
     {
-        pthread_create(&(admin->thread_tid_arr[i]),NULL,work_thread_fun,(void*)admin);
+        pthread_create(&(admin->thread_tid_arr),NULL,work_thread_fun,(void*)admin);
+        pthread_detach(admin->thread_tid_arr);
         pthread_mutex_lock(&thread_lock);
         admin->alive_thread++;
         pthread_mutex_unlock(&thread_lock);
@@ -180,20 +183,12 @@ void* adminThread(void *arg)
             for(int i=0;i<admin->stepThreadCount;i++)
             {
                 //printf("add2 thread-admin\n");
-                for(int j=0;j<admin->max_thread;j++)//查找数组中的空值可以值得修改
-                {
-                    //printf("find tid arr\t");                    
-                    if(admin->thread_tid_arr[j]==0)
-                    {
-                        //printf("\nfinded tid arr\n");
-                        pthread_create(&admin->thread_tid_arr[j],NULL,work_thread_fun,(void *)admin);   
-                        pthread_mutex_lock(&thread_lock);
-                        admin->alive_thread++;
-                        pthread_mutex_unlock(&thread_lock);
-                        break;     
-                    }
-                }
-
+                //printf("\nfinded tid arr\n");
+                pthread_create(&admin->thread_tid_arr,NULL,work_thread_fun,(void *)admin); 
+                pthread_detach(admin->thread_tid_arr);
+                pthread_mutex_lock(&thread_lock);
+                admin->alive_thread++;
+                pthread_mutex_unlock(&thread_lock);
             }
         }
 
@@ -256,24 +251,13 @@ admin_thread_t* create_thread_pool(int maxThreadCount,int minThreadCount,int ste
     admin->exit_threadCount=0;
     admin->taskQueue=create_cirQueue(admin->max_thread);
     printf("create tasskQueue\n");
-
-    admin->thread_tid_arr=malloc(admin->max_thread*sizeof(pthread_t));
-    if(admin->thread_tid_arr==NULL)
-    {
-        printf("admin->tid array malloc fail\n");
-        exit(1);
-    }
-    for(int i=0;i<admin->max_thread;i++)
-    {
-        admin->thread_tid_arr[i]=0;
-    }
-
     pthread_cond_init(&admin->has_task_cond,NULL);
     printf("cond_init\n");
     pthread_mutex_init(&admin->work_thread_mutex_lock,NULL);
     printf("mutex init\n");
     //创建管理者线程
     pthread_create(&(admin->admin_thread_tid),NULL,adminThread,(void*)admin);
+    pthread_detach(admin->admin_thread_tid);
     return admin;
 }
 
@@ -282,7 +266,6 @@ void destroy_thread_pool(admin_thread_t* admin)
     pthread_mutex_destroy(&admin->work_thread_mutex_lock);
     pthread_cond_destroy(&admin->has_task_cond);
     destroy_cirQueue(admin->taskQueue);
-    free(admin->thread_tid_arr);
     free(admin);
 }
 
@@ -290,6 +273,10 @@ void* threadIdle(void *arg)
 {
     return NULL;
 }
+
+
+
+#if  _TEST
 void* testThreadPool(void *arg)
 {
     while(1)
@@ -337,5 +324,5 @@ int main(int argc, char const *argv[])
     destroy_thread_pool(admin);
     return 0;
 }
-
+#endif
 
